@@ -28,12 +28,46 @@ class MainWindow(QtWidgets.QMainWindow):
         r = requests.post(url, json=data)
         # print(r.sttus_code, r.reason)
 
+    def GetMessage(self, id):
+        id = str(id)
+        url = self.ServerAdress + "/api/Messanger/" + id
+        # print(url)
+        try:
+            response = requests.get(url)
+            # если ответ успешен, исключения задействованы не будут
+            response.raise_for_status()
+        except HTTPError as http_err:
+            # print(f'HTTP error occurred: {http_err}')
+            return None
+        except Exception as err:
+            return None
+        else:
+            text = response.text
+            return text
+
+    def timerEvent(self):
+        msg = self.GetMessage(self.MessageID)
+        while msg is not None:
+            msg = json.loads(msg)
+            UserName = msg["UserName"]
+            MessageText = msg["MessageText"]
+            TimeStamp = msg["TimeStamp"]
+            msgtext = f"{TimeStamp} : <{UserName}> : {MessageText}"
+            print(msgtext)
+            self.listWidget.insertItem(self.MessageID, msgtext)
+            self.MessageID += 1
+            msg = self.GetMessage(self.MessageID)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     w = MainWindow()
     w.show()
+    timer = QtCore.QTimer()
+    time = QtCore.QTime(0, 0, 0)
+    timer.timeout.connect(w.timerEvent)
+    timer.start(5000)
     sys.exit(app.exec())
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
